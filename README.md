@@ -60,7 +60,7 @@ $ python3 ytsync.py -h
 
 ## List Downloadable Playlists On a Channel
 ```sh
-$ python3 ytsync.py --api-key <key> list-channels <channel_id>
+$ python3 ytsync.py --api-key <key> list-playlists <channel_id>
 ```
 
 Outputs playlist id and title.
@@ -86,7 +86,7 @@ Alternatively, ytsync can be run inside a Docker container.
 
 ```sh
 $ docker build -t ytsync .
-$ docker run --rm ytsync --api-key <key> list-channels <channel_id>
+$ docker run --rm ytsync --api-key <key> list-playlists <channel_id>
 ```
 
 # Customize Video Transcoding

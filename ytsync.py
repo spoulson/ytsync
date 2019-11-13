@@ -131,7 +131,7 @@ def download_playlist_item(api_key, playlist, item):
 	playlist_path = os.path.join(target_path, normalize_filename(playlist_filename))
 	video_file = os.path.join(playlist_path, normalize_filename(f'{video_filename}.mkv'))
 	if verbose:
-		print(f'video_file: {video_file}')
+		print(f'Saving to file: {video_file}')
 
 	if not os.path.exists(playlist_path):
 		os.makedirs(playlist_path)
@@ -204,5 +204,7 @@ elif args.command == 'sync-channel':
 
 elif args.command == 'sync-playlist':
 	cmd_sync_playlist(args.playlist_id)
+
+print('Done')
 
 sys.exit(0)

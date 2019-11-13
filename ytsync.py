@@ -15,6 +15,7 @@ parser.add_argument('--api-key', required=True, help='YouTube API key (required)
 parser.add_argument('-d', default='download', help='Download path, default "download"')
 parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
 parser.add_argument('-v', action='store_true', help='Verbose output')
+parser.add_argument('--ytdl-args', default='-f bestvideo+bestaudio --merge-output-format mkv', help='youtube-dl optional arguments')
 subparsers = parser.add_subparsers(dest='command', required=True)
 
 parser_list_playlists = subparsers.add_parser('list-playlists', help='List playlists in a channel')
@@ -32,6 +33,7 @@ api_key = args.api_key
 target_path = args.d
 force = args.f
 verbose = args.v
+ytdl_args = args.ytdl_args
 
 def list_paginate_items(url, headers, params):
 	items = []
@@ -112,7 +114,7 @@ def download_video(video_id, filename):
 		return
 
 	video_url = f'https://youtu.be/{video_id}'
-	cmd = f'youtube-dl -f bestvideo+bestaudio --merge-output-format mkv -o {shell_escape_filename(filename)} {video_url}'
+	cmd = f'youtube-dl {ytdl_args} -o {shell_escape_filename(filename)} {video_url}'
 	if verbose:
 		print(cmd)
 

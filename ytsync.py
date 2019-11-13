@@ -139,8 +139,8 @@ def download_playlist_item(api_key, playlist, item):
 	video_id = item['snippet']['resourceId']['videoId']
 	try:
 		download_video(video_id, video_file)
-	except:
-		print(f'Download failed: {sys.exc_value}')
+	except Exception as e:
+		print(f'Download failed: {str(e)}')
 
 def cmd_list_playlists(channel_id):
 	playlists = list_playlists(api_key, channel_id=channel_id)

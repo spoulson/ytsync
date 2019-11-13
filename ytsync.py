@@ -91,7 +91,7 @@ def list_playlist_items(api_key, playlist_id):
 # Normalize string for use as a filename.
 def normalize_filename(text):
 	# Replace forbidden characters.
-	text2 = re.sub(r'[\/]+', '_', text)
+	text2 = re.sub(r'[\/%]+', '_', text)
 	# Replace redundant white space, replace tabs/newlines to spaces.
 	text3 = re.sub(r'\s+', ' ', text2)
 	return text3
@@ -107,7 +107,7 @@ def get_playlist_item_filename(item):
 	return video_title
 
 def shell_escape_filename(filename):
-	return re.sub(r'(\s|[\\\'"|()<>{}$&#?*`!])', r'\\\1', filename)
+	return re.sub(r'(\s|[\\\'"|()<>{}$&#?*`!;])', r'\\\1', filename)
 
 def download_video(video_id, filename):
 	if not force and os.path.exists(filename):
@@ -137,7 +137,10 @@ def download_playlist_item(api_key, playlist, item):
 		os.makedirs(playlist_path)
 
 	video_id = item['snippet']['resourceId']['videoId']
-	download_video(video_id, video_file)
+	try:
+		download_video(video_id, video_file)
+	except:
+		print(f'Download failed: {sys.exc_value}')
 
 def cmd_list_playlists(channel_id):
 	playlists = list_playlists(api_key, channel_id=channel_id)

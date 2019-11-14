@@ -1,12 +1,21 @@
-FROM alpine:3.10
-
+# Base image.
+FROM alpine:3.10 AS base
 RUN apk update && \
-  apk add --no-cache youtube-dl ffmpeg && \
+  apk add --no-cache python3 && \
   mkdir -p /opt/ytsync
 
-RUN pip3 install requests
-
+# Build stage.
+FROM base AS build
 WORKDIR /opt/ytsync
-COPY dp.py .
+COPY . .
+RUN pip3 install wheel && \
+  python3 setup.py bdist_wheel
 
-ENTRYPOINT [ "python3", "ytsync.py" ]
+# Production stage.
+FROM base AS production
+COPY --from=build /opt/ytsync/dist /opt/ytsync/dist
+RUN apk add --no-cache youtube-dl ffmpeg && \
+  pip3 install -f /opt/ytsync/dist ytsync && \
+  rm -rf /opt/ytsync
+
+ENTRYPOINT [ "ytsync" ]

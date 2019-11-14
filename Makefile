@@ -10,4 +10,8 @@ init:
 
 .PHONY: lint
 lint:
-	pylint ytsync scripts
+	pylint ytsync
+
+.PHONY: clean
+clean:
+	rm -rf build dist *.egg-info

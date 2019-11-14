@@ -10,11 +10,11 @@ This tool allows you to scan public playlists and download content to local
 storage while you still can.  Run repeatedly in a cron job to incrementally
 sync newly added content.
 
-# System Requirements
+# Installation
 ## Python 3
-Required pip module:
+Install from source:
 ```sh
-$ pip3 install requests
+$ pip3 install .
 ```
 
 ## youtube-dl
@@ -55,19 +55,19 @@ Or, use ytsync to browse playlist ids on a channel.
 
 # Usage
 ```sh
-$ python3 ytsync.py -h
+$ ytsync -h
 ```
 
 ## List Downloadable Playlists On a Channel
 ```sh
-$ python3 ytsync.py --api-key <key> list-playlists <channel_id>
+$ ytsync --api-key <key> list-playlists <channel_id>
 ```
 
 Outputs playlist id and title.
 
 ## Sync a Playlist
 ```sh
-$ python3 ytsync.py --api-key <key> sync-playlist <playlist_id>
+$ ytsync --api-key <key> sync-playlist <playlist_id>
 ```
 
 Downloaded content will be downloaded using highest quality available and saved
@@ -78,7 +78,7 @@ option `-f` to force overwrite.
 
 ## Sync All Playlists On a Channel
 ```sh
-$ python3 ytsync.py --api-key <key> sync-channel <channel_id>
+$ ytsync --api-key <key> sync-channel <channel_id>
 ```
 
 # Run in Docker
@@ -97,7 +97,7 @@ merge to an "mkv" format file.
 This behavior can be customized by passing option `--ytdl-args "..."`, such as:
 
 ```sh
-$ python3 ytsync.py --ytdl-args "-f bestvideo+bestaudio --merge-output-format mkv" ...
+$ ytsync --ytdl-args "-f bestvideo+bestaudio --merge-output-format mkv" ...
 ```
 
 See [youtube-dl

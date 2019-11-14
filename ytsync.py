@@ -1,210 +1,222 @@
-# ytsync.py
-# Synchronize YouTube playlists on a channel to local storage.
-# Downloads all videos using youtube-dl.
-
+"""
+ytsync.py
+Synchronize YouTube playlists on a channel to local storage.
+Downloads all videos using youtube-dl.
+"""
 import argparse
 import json
 import os
 import re
-import requests
 import sys
+import requests
 
-# Parse command line arguments.
-parser = argparse.ArgumentParser(description='ytsync')
-parser.add_argument('--api-key', required=True, help='YouTube API key (required)')
-parser.add_argument('-d', default='download', help='Download path, default "download"')
-parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
-parser.add_argument('-v', action='store_true', help='Verbose output')
-parser.add_argument('--ytdl-args', default='-f bestvideo+bestaudio --merge-output-format mkv', help='youtube-dl optional arguments')
-subparsers = parser.add_subparsers(dest='command', required=True)
+class App:
+    """ ytsync class """
+    args = None
 
-parser_list_playlists = subparsers.add_parser('list-playlists', help='List playlists in a channel')
-parser_list_playlists.add_argument(dest='channel_id')
+    def list_paginate_items(self, url, headers, params):
+        """ Call YouTube Data API and paginate using nextPageToken. """
+        items = []
 
-parser_sync_channel = subparsers.add_parser('sync-channel', help='Sync all playlists in a channel')
-parser_sync_channel.add_argument(dest='channel_id')
+        while True:
+            if self.args.v:
+                print(f'API url: {url}, params: {params}')
 
-parser_sync_playlist = subparsers.add_parser('sync-playlist', help='Sync a playlist')
-parser_sync_playlist.add_argument(dest='playlist_id')
+            response = requests.get(url, params=params, headers=headers)
+            if response.status_code != 200:
+                raise Exception(f'API error {response.status_code} at url: {url}')
 
-args = parser.parse_args(sys.argv[1:])
+            content = json.loads(response.content)
+            items = items + content['items']
 
-api_key = args.api_key
-target_path = args.d
-force = args.f
-verbose = args.v
-ytdl_args = args.ytdl_args
+            if not 'nextPageToken' in content:
+                break
 
-def list_paginate_items(url, headers, params):
-	items = []
+            if 'pageToken' in params and params['pageToken'] == content['nextPageToken']:
+                raise Exception('Endless loop detected.  nextPageToken isn\'t updating.')
 
-	while True:
-		if verbose:
-			print(f'API url: {url}, params: {params}')
+            params['pageToken'] = content['nextPageToken']
 
-		response = requests.get(url, params=params, headers=headers)
-		if response.status_code != 200:
-			raise Exception(f'API error {response.status_code} at url: {url}')
+        return items
 
-		content = json.loads(response.content)
-		items = items + content['items']
+    def list_playlists(self, channel_id=None, playlist_ids=None):
+        """ Call YouTube Data API to list playlists by either channel id or playlist ids. """
+        url = 'https://www.googleapis.com/youtube/v3/playlists'
+        headers = {'Content-Type': 'application/json'}
+        params = {
+            'part': 'contentDetails,snippet',
+            'maxResults': 50,
+            'key': self.args.api_key
+        }
+        if channel_id is not None:
+            params['channelId'] = channel_id
+        elif playlist_ids is not None:
+            params['id'] = ','.join(playlist_ids)
+        else:
+            raise Exception('Must specify channel_id or playlist_ids')
 
-		if not 'nextPageToken' in content:
-			break
+        return self.list_paginate_items(url, headers, params)
 
-		if 'pageToken' in params and params['pageToken'] == content['nextPageToken']:
-			raise Exception('Endless loop detected.  nextPageToken isn\'t updating.')
+    def list_playlist_items(self, playlist_id):
+        """ Call YouTube Data API to list playlist items. """
+        url = 'https://www.googleapis.com/youtube/v3/playlistItems'
+        headers = {'Content-Type': 'application/json'}
+        params = {
+            'playlistId': playlist_id,
+            'part': 'contentDetails,snippet,status',
+            'maxResults': 50,
+            'key': self.args.api_key
+        }
 
-		params['pageToken'] = content['nextPageToken']
+        return self.list_paginate_items(url, headers, params)
 
-	return items
+    @staticmethod
+    def normalize_filename(text):
+        """ Normalize string for use as a filename. """
+        # Replace forbidden characters.
+        text2 = re.sub(r'[\/%]+', '_', text)
+        # Replace redundant white space, replace tabs/newlines to spaces.
+        text3 = re.sub(r'\s+', ' ', text2)
+        return text3
 
-def list_playlists(api_key, channel_id = None, playlist_ids = None):
-	url = 'https://www.googleapis.com/youtube/v3/playlists'
-	headers = { 'Content-Type': 'application/json' }
-	params = {
-			'part': 'contentDetails,snippet',
-			'maxResults': 50,
-			'key': api_key
-			}
-	if channel_id != None:
-		params['channelId'] = channel_id
-	elif playlist_ids != None:
-		params['id'] = ','.join(playlist_ids)
-	else:
-		raise Exception('Must specify channel_id or playlist_ids')
+    @staticmethod
+    def shell_escape_filename(filename):
+        """ Escape filename for use as shell argument. """
+        return re.sub(r'(\s|[\\\'"|()<>{}$&#?*`!;])', r'\\\1', filename)
 
-	return list_paginate_items(url, headers, params)
+    def download_video(self, video_id, filename):
+        """ Download a YouTube video. """
+        if not self.args.f and os.path.exists(filename):
+            return
 
-def list_playlist_items(api_key, playlist_id):
-	url = 'https://www.googleapis.com/youtube/v3/playlistItems'
-	headers = { 'Content-Type': 'application/json' }
-	params = {
-			'playlistId': playlist_id,
-			'part': 'contentDetails,snippet,status',
-			'maxResults': 50,
-			'key': api_key
-			}
+        video_url = f'https://youtu.be/{video_id}'
+        cmd = f'youtube-dl {self.args.ytdl_args} -o {self.shell_escape_filename(filename)} ' \
+                + video_url
+        if self.args.v:
+            print(cmd)
 
-	return list_paginate_items(url, headers, params)
+        os.system(cmd)
 
-# Normalize string for use as a filename.
-def normalize_filename(text):
-	# Replace forbidden characters.
-	text2 = re.sub(r'[\/%]+', '_', text)
-	# Replace redundant white space, replace tabs/newlines to spaces.
-	text3 = re.sub(r'\s+', ' ', text2)
-	return text3
+        # Verify file was created.
+        if not os.path.exists(filename):
+            raise RuntimeError(f'File was not created: {filename}')
 
-def get_playlist_filename(playlist):
-	playlist_id = playlist['id']
-	playlist_title = playlist['snippet']['title']
-	return playlist_title
+    def download_playlist_item(self, playlist, item):
+        """ Download all videos in a YouTube playlist. """
+        # Determine download file path.
+        playlist_filename = playlist['snippet']['title']
+        video_filename = item['snippet']['title']
+        playlist_path = os.path.join(self.args.d, self.normalize_filename(playlist_filename))
+        video_file = os.path.join(playlist_path, self.normalize_filename(f'{video_filename}.mkv'))
+        if self.args.v:
+            print(f'Saving to file: {video_file}')
 
-def get_playlist_item_filename(item):
-	video_id = item['snippet']['resourceId']['videoId']
-	video_title = item['snippet']['title']
-	return video_title
+        if not os.path.exists(playlist_path):
+            os.makedirs(playlist_path)
 
-def shell_escape_filename(filename):
-	return re.sub(r'(\s|[\\\'"|()<>{}$&#?*`!;])', r'\\\1', filename)
+        video_id = item['snippet']['resourceId']['videoId']
+        try:
+            self.download_video(video_id, video_file)
+        except RuntimeError as err:
+            print(f'Download failed: {str(err)}')
 
-def download_video(video_id, filename):
-	if not force and os.path.exists(filename):
-		return
+    def cmd_list_playlists(self):
+        """ CLI command to list playlists by channel id. """
+        playlists = self.list_playlists(channel_id=self.args.channel_id)
 
-	video_url = f'https://youtu.be/{video_id}'
-	cmd = f'youtube-dl {ytdl_args} -o {shell_escape_filename(filename)} {video_url}'
-	if verbose:
-		print(cmd)
+        for playlist in playlists:
+            playlist_id = playlist['id']
+            playlist_title = playlist['snippet']['title']
+            print(f'{playlist_id}\t{playlist_title}')
 
-	os.system(cmd)
+    def cmd_sync_playlist(self):
+        """ CLI command to sync playlist. """
+        playlist_id = self.args.playlist_id
+        playlists = self.list_playlists(playlist_ids=[playlist_id])
+        if not playlists:
+            print(f'Playlist not found')
+            return
 
-	# Verify file was created.
-	if not os.path.exists(filename):
-		raise Exception(f'File was not created: {filename}')
+        playlist = playlists[0]
+        playlist_id = playlist['id']
+        items = self.list_playlist_items(playlist_id)
 
-def download_playlist_item(api_key, playlist, item):
-	# Determine download file path.
-	playlist_filename = get_playlist_filename(playlist)
-	video_filename = get_playlist_item_filename(item)
-	playlist_path = os.path.join(target_path, normalize_filename(playlist_filename))
-	video_file = os.path.join(playlist_path, normalize_filename(f'{video_filename}.mkv'))
-	if verbose:
-		print(f'Saving to file: {video_file}')
+        for item in items:
+            video_title = item['snippet']['title']
+            video_id = item['snippet']['resourceId']['videoId']
 
-	if not os.path.exists(playlist_path):
-		os.makedirs(playlist_path)
+            if item['status']['privacyStatus'] == 'private':
+                print(f'Skipping private video id "{video_id}"')
+                continue
 
-	video_id = item['snippet']['resourceId']['videoId']
-	try:
-		download_video(video_id, video_file)
-	except Exception as e:
-		print(f'Download failed: {str(e)}')
+            print(f'Found video "{video_title}"')
+            self.download_playlist_item(playlist, item)
 
-def cmd_list_playlists(channel_id):
-	playlists = list_playlists(api_key, channel_id=channel_id)
+    def cmd_sync_channel(self):
+        """ CLI command to sync all playlists in a channel. """
+        playlists = self.list_playlists(channel_id=self.args.channel_id)
 
-	for playlist in playlists:
-		playlist_id = playlist['id']
-		playlist_title = playlist['snippet']['title']
-		print(f'{playlist_id}\t{playlist_title}')
+        for playlist in playlists:
+            playlist_id = playlist['id']
+            items = self.list_playlist_items(playlist_id)
 
-	return
+            for item in items:
+                video_title = item['snippet']['title']
+                video_id = item['snippet']['resourceId']['videoId']
 
-def cmd_sync_playlist(playlist_id):
-	playlists = list_playlists(api_key, playlist_ids=[playlist_id])
-	if not playlists:
-		print(f'Playlist not found')
-		return
+                if item['status']['privacyStatus'] == 'private':
+                    print(f'Skipping private video id "{video_id}"')
+                    continue
 
-	playlist = playlists[0]
-	playlist_id = playlist['id']
-	items = list_playlist_items(api_key, playlist_id)
+                print(f'Found video "{video_title}"')
+                self.download_playlist_item(playlist, item)
 
-	for item in items:
-		video_title = item['snippet']['title']
-		video_id = item['snippet']['resourceId']['videoId']
+    def __init__(self):
+        """ Constructor. """
+        # Parse command line arguments.
+        parser = argparse.ArgumentParser(description='ytsync')
+        parser.add_argument('--api-key', required=True, help='YouTube API key (required)')
+        parser.add_argument('-d', default='download', help='Download path, default "download"')
+        parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
+        parser.add_argument('-v', action='store_true', help='Verbose output')
+        parser.add_argument('--ytdl-args',
+                            default='-f bestvideo+bestaudio --merge-output-format mkv',
+                            help='youtube-dl optional arguments'
+                            )
+        subparsers = parser.add_subparsers(dest='command', required=True)
 
-		if item['status']['privacyStatus'] == 'private':
-			print(f'Skipping private video id "{video_id}"')
-			continue
+        parser_list_playlists = \
+            subparsers.add_parser('list-playlists',
+                                  help='List playlists in a channel'
+                                  )
+        parser_list_playlists.add_argument(dest='channel_id')
 
-		print(f'Found video "{video_title}"')
-		download_playlist_item(api_key, playlist, item)
+        parser_sync_channel = \
+            subparsers.add_parser('sync-channel',
+                                  help='Sync all playlists in a channel'
+                                  )
+        parser_sync_channel.add_argument(dest='channel_id')
 
-	return
+        parser_sync_playlist = subparsers.add_parser('sync-playlist', help='Sync a playlist')
+        parser_sync_playlist.add_argument(dest='playlist_id')
 
-def cmd_sync_channel(channel_id):
-	playlists = list_playlists(api_key, channel_id=channel_id)
+        self.args = parser.parse_args(sys.argv[1:])
 
-	for playlist in playlists:
-		playlist_id = playlist['id']
-		items = list_playlist_items(api_key, playlist_id)
+    def main(self):
+        """ Entrypoint. """
+        # Dispatch command.
+        command = self.args.command
+        if command == 'list-playlists':
+            self.cmd_list_playlists()
 
-		for item in items:
-			video_title = item['snippet']['title']
-			video_id = item['snippet']['resourceId']['videoId']
+        elif command == 'sync-channel':
+            self.cmd_sync_channel()
 
-			if item['status']['privacyStatus'] == 'private':
-				print(f'Skipping private video id "{video_id}"')
-				continue
+        elif command == 'sync-playlist':
+            self.cmd_sync_playlist()
 
-			print(f'Found video "{video_title}"')
-			download_playlist_item(api_key, playlist, item)
+        print('Done')
 
-	return
-
-# Dispatch commands.
-if args.command == 'list-playlists':
-	cmd_list_playlists(args.channel_id)
-
-elif args.command == 'sync-channel':
-	cmd_sync_channel(args.channel_id)
-
-elif args.command == 'sync-playlist':
-	cmd_sync_playlist(args.playlist_id)
-
-print('Done')
-
-sys.exit(0)
+# Call entrypoint.
+APP = App()
+APP.main()

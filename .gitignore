@@ -1,1 +1,5 @@
 download
+*.pyc
+/dist/
+/*.egg-info
+/*.egg

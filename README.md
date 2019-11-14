@@ -89,8 +89,7 @@ $ docker run --rm ytsync --api-key <key> list-playlists <channel_id>
 ```
 
 # Customize Video Transcoding
-youtube-dl uses ffmpeg to transcode and merge the audio/video streams.  By
-default, ytsync will tell youtube-dl to download highest quality streams and
+By default, ytsync will tell youtube-dl to download highest quality streams and
 merge to an "mkv" format file.
 
 This behavior can be customized by passing option `--ytdl-args "..."`, such as:

@@ -10,13 +10,7 @@ This tool allows you to scan public playlists and download content to local
 storage while you still can.  Run repeatedly in a cron job to incrementally
 sync newly added content.
 
-# Installation
-## Python 3
-Install from source:
-```sh
-$ pip3 install .
-```
-
+# Pre-requisites
 ## youtube-dl
 Mac OS X:
 ```sh
@@ -27,6 +21,11 @@ $ brew install youtube-dl
 Mac OS X:
 ```sh
 $ brew install ffmpeg
+```
+
+# Installation
+```sh
+$ pip3 install .
 ```
 
 # Getting Started
@@ -58,7 +57,7 @@ Or, use ytsync to browse playlist ids on a channel.
 $ ytsync -h
 ```
 
-## List Downloadable Playlists On a Channel
+## List Downloadable Playlists on a Channel
 ```sh
 $ ytsync --api-key <key> list-playlists <channel_id>
 ```
@@ -76,7 +75,7 @@ at file path such as: `download/<playlist>/<video>.mkv`.
 If the content has already been downloaded, it will be skipped.  Or, pass
 option `-f` to force overwrite.
 
-## Sync All Playlists On a Channel
+## Sync All Playlists on a Channel
 ```sh
 $ ytsync --api-key <key> sync-channel <channel_id>
 ```

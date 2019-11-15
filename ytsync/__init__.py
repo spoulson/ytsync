@@ -38,7 +38,7 @@ class Ytsync:
 
             response = requests.get(url, params=params, headers=headers)
             if response.status_code != 200:
-                raise Exception(f'API error {response.status_code} at url: {url}')
+                raise RuntimeError(f'API error {response.status_code} at url: {url}')
 
             content = json.loads(response.content)
             items = items + content['items']
@@ -47,7 +47,7 @@ class Ytsync:
                 break
 
             if 'pageToken' in params and params['pageToken'] == content['nextPageToken']:
-                raise Exception('Endless loop detected.  nextPageToken isn\'t updating.')
+                raise RuntimeError('Endless loop detected.  nextPageToken isn\'t updating.')
 
             params['pageToken'] = content['nextPageToken']
 
@@ -67,7 +67,7 @@ class Ytsync:
         elif playlist_ids is not None:
             params['id'] = ','.join(playlist_ids)
         else:
-            raise Exception('Must specify channel_id or playlist_ids')
+            raise ValueError('Must specify channel_id or playlist_ids')
 
         return self.list_paginate_items(url, headers, params)
 

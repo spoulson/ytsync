@@ -88,6 +88,9 @@ $ docker build -t ytsync .
 $ docker run --rm ytsync --api-key <key> list-playlists <channel_id>
 ```
 
+# Environment Variables
+| `API_KEY` | Pass API key securely through environment.  Omit `--api-key` option. |
+
 # Customize Video Transcoding
 By default, ytsync will tell youtube-dl to download highest quality streams and
 merge to an "mkv" format file.

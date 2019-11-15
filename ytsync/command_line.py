@@ -1,6 +1,7 @@
 """ Command line entrypoint. """
 
 import argparse
+import os
 import sys
 from . import Ytsync
 
@@ -64,7 +65,7 @@ class YtsyncCli:
         """ Parse command line arguments. """
         # Parse command line arguments.
         parser = argparse.ArgumentParser(description='ytsync')
-        parser.add_argument('--api-key', required=True, help='YouTube API key (required)')
+        parser.add_argument('--api-key', help='YouTube API key')
         parser.add_argument('-d', default='download', help='Download path, default "download"')
         parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
         parser.add_argument('-v', action='store_true', help='Verbose output')
@@ -96,7 +97,14 @@ class YtsyncCli:
         self.ytsync = Ytsync()
         self.ytsync.verbose = self.args.v
         self.ytsync.force = self.args.f
-        self.ytsync.api_key = self.args.api_key
+
+        if self.args.api_key is not None:
+            self.ytsync.api_key = self.args.api_key
+        elif 'API_KEY' in os.environ:
+            self.ytsync.api_key = os.environ['API_KEY']
+        else:
+            raise ValueError('API key is required')
+
         self.ytsync.target_path = self.args.d
         if self.args.ytdl_args != '':
             self.ytsync.ytdl_args = self.args.ytdl_args

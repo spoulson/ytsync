@@ -16,7 +16,12 @@ setup(
         'License :: OSI Approved :: MIT License'
     ],
     packages=['ytsync'],
-    install_requires=['requests'],
+    install_requires=[
+        'Chronyk',
+        'iso8601',
+        'pytz',
+        'requests'
+    ],
     entry_points={
         'console_scripts': [
             'ytsync=ytsync.command_line:main'

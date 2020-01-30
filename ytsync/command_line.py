@@ -82,6 +82,13 @@ class YtSyncCli:
         # Parse filter criteria.
         item_filter = build_item_filter(self.args)
 
+        options = {}
+        if self.args.no_metadata:
+            options['no_metadata'] = True
+
+        if self.args.no_video:
+            options['no_video'] = True
+
         # Iterate items.
         items = self.ytapi.list_playlist_items(playlist_id)
         for item in items:
@@ -96,7 +103,7 @@ class YtSyncCli:
                 continue
 
             print(f'Found video "{video_title}"')
-            self.ytapi.download_playlist_item(playlist, item)
+            self.ytapi.download_playlist_item(playlist, item, options)
 
     def cmd_sync_channel(self):
         """ CLI command to sync all playlists in a channel. """
@@ -104,6 +111,13 @@ class YtSyncCli:
 
         # Parse filter criteria.
         item_filter = build_item_filter(self.args)
+
+        options = {}
+        if self.args.no_metadata:
+            options['no_metadata'] = True
+
+        if self.args.no_video:
+            options['no_video'] = True
 
         # Iterate playlists.
         for playlist in playlists:
@@ -118,19 +132,27 @@ class YtSyncCli:
                 video_title = item['snippet']['title']
                 video_id = item['snippet']['resourceId']['videoId']
 
+                if not 'status' in item:
+                    # Assume video has been deleted.
+                    continue
+
+                if not 'privacyStatus' in item['status']:
+                    print('Error: Invalid playlist item data.')
+                    continue
+
                 if item['status']['privacyStatus'] == 'private':
                     print(f'Skipping private video id "{video_id}"')
                     continue
 
                 print(f'Found video "{video_title}"')
-                self.ytapi.download_playlist_item(playlist, item)
+                self.ytapi.download_playlist_item(playlist, item, options)
 
     def parse_args(self):
         """ Parse command line arguments. """
         # Parse command line arguments.
         parser = argparse.ArgumentParser(description='ytsync')
         parser.add_argument('--api-key', help='YouTube API key')
-        parser.add_argument('-d', default='download', help='Download path, default "download"')
+        parser.add_argument('-d', default='.', help='Download path, default "download"')
         parser.add_argument('--dry-run', action='store_true', help='Dry run, do not download anything')
         parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
         parser.add_argument('-v', action='store_true', help='Verbose output')
@@ -147,14 +169,18 @@ class YtSyncCli:
                                   help='Sync all playlists in a channel')
         parser_sync_channel.add_argument(dest='channel_id', help='Channel id to sync')
         parser_sync_channel.add_argument('--added-since', help='Filter videos added to playlist since timestamp')
-        parser_sync_channel.add_argument('--published-since', help='Filter videos published since timestamp')
         parser_sync_channel.add_argument('--name', help='Filter video names matching substring case-insensitive')
+        parser_sync_channel.add_argument('--no-metadata', action="store_true", help='Skip downloading metadata file')
+        parser_sync_channel.add_argument('--no-video', action="store_true", help='Skip downloading video file')
+        parser_sync_channel.add_argument('--published-since', help='Filter videos published since timestamp')
 
         parser_sync_playlist = subparsers.add_parser('sync-playlist', help='Sync a playlist')
         parser_sync_playlist.add_argument(dest='playlist_id', help='Playlist id to sync')
         parser_sync_playlist.add_argument('--added-since', help='Filter videos added to playlist since timestamp')
-        parser_sync_playlist.add_argument('--published-since', help='Filter videos published since timestamp')
         parser_sync_playlist.add_argument('--name', help='Filter video names matching substring case-insensitive')
+        parser_sync_playlist.add_argument('--no-metadata', action="store_true", help='Skip downloading metadata file')
+        parser_sync_playlist.add_argument('--no-video', action="store_true", help='Skip downloading video file')
+        parser_sync_playlist.add_argument('--published-since', help='Filter videos published since timestamp')
 
         self.args = parser.parse_args(sys.argv[1:])
 

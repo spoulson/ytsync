@@ -1,4 +1,5 @@
 """ YouTube API client. """
+import datetime
 import json
 import os
 import re
@@ -16,6 +17,22 @@ def normalize_filename(text):
 def shell_escape_filename(filename):
     """ Escape filename for use as shell argument. """
     return re.sub(r'(\s|[\\\'"|()<>{}$&#?*`!;])', r'\\\1', filename)
+
+def write_metadata_file(meta_filename, item, video_filename):
+    """ Write YouTube video metadata to file. """
+    if os.path.exists(meta_filename):
+        # Do not overwrite.
+        return
+
+    metadata = {
+        'video_file': video_filename,
+        'create_date': datetime.datetime.now().isoformat(),
+        'youtube_playlist_item': item
+    }
+    with open(meta_filename, 'w') as mfile:
+        mfile.write(json.dumps(metadata))
+
+    return
 
 class ListPaginateIterator:
     """ Iterate over paginated list calls in YouTube Data API. """
@@ -122,21 +139,36 @@ class YtApi:
             if not os.path.exists(filename):
                 raise RuntimeError(f'File was not created: {filename}')
 
-    def download_playlist_item(self, playlist, item):
+    def download_playlist_item(self, playlist, item, options):
         """ Download all videos in a YouTube playlist. """
-        # Determine download file path.
+        options2 = {
+            'no_metadata': False,
+            'no_video': False,
+            **options
+        }
+
+        # Determine download filenames.
         playlist_filename = playlist['snippet']['title']
         video_filename = item['snippet']['title']
         playlist_path = os.path.join(self.target_path, normalize_filename(playlist_filename))
-        video_file = os.path.join(playlist_path, normalize_filename(f'{video_filename}.mkv'))
+        norm_video_basename = normalize_filename(video_filename)
+        norm_video_filename = f'{norm_video_basename}.mkv'
+        video_file = os.path.join(playlist_path, norm_video_filename)
         if self.verbose:
             print(f'Saving to file: {video_file}')
 
         if not os.path.exists(playlist_path):
             os.makedirs(playlist_path)
 
-        video_id = item['snippet']['resourceId']['videoId']
-        try:
-            self.download_video(video_id, video_file)
-        except RuntimeError as err:
-            print(f'Download failed: {str(err)}')
+        if not options2['no_metadata']:
+            # Write metadata to file.
+            metadata_file = os.path.join(playlist_path, f'{norm_video_basename}.meta.json')
+            write_metadata_file(metadata_file, item, norm_video_filename)
+
+        if not options2['no_video']:
+            # Capture video file.
+            video_id = item['snippet']['resourceId']['videoId']
+            try:
+                self.download_video(video_id, video_file)
+            except RuntimeError as err:
+                print(f'Download failed: {str(err)}')

@@ -152,7 +152,7 @@ class YtSyncCli:
         # Parse command line arguments.
         parser = argparse.ArgumentParser(description='ytsync')
         parser.add_argument('--api-key', help='YouTube API key')
-        parser.add_argument('-d', default='download', help='Download path, default "download"')
+        parser.add_argument('-d', default='.', help='Download path, default "download"')
         parser.add_argument('--dry-run', action='store_true', help='Dry run, do not download anything')
         parser.add_argument('-f', action='store_true', help='Force overwrite existing downloads')
         parser.add_argument('-v', action='store_true', help='Verbose output')

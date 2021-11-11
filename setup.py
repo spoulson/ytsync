@@ -3,9 +3,9 @@ from setuptools import setup
 
 setup(
     name='ytsync',
-    version='1.0a1',
-    description='Download YouTube playlists.',
-    python_requires='>=3.5',
+    version='2.0-alpha.1',
+    description='Download YouTube videos and from other video sites.',
+    python_requires='>=3.6',
     author='Shawn Poulson',
     author_email='shawn@explodingcoder.com',
     url='https://github.com/spoulson/ytsync',
@@ -17,10 +17,7 @@ setup(
     ],
     packages=['ytsync'],
     install_requires=[
-        'Chronyk',
-        'iso8601',
-        'pytz',
-        'requests'
+        'yt-dlp'
     ],
     entry_points={
         'console_scripts': [

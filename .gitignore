@@ -4,3 +4,6 @@ download
 /dist/
 /*.egg-info
 /*.egg
+/bin/
+/lib/
+pyvenv.cfg

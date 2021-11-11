@@ -1,5 +1,4 @@
 """
 ytsync.py
-Synchronize YouTube playlists on a channel to local storage.
-Downloads all videos using youtube-dl.
+Download YouTube videos and from other video sites.
 """

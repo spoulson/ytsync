@@ -1,6 +1,7 @@
 """ Command line entrypoint. """
 
 import argparse
+import re
 import shlex
 import sys
 
@@ -26,7 +27,7 @@ class YtsyncCli:
                             help='yt-dlp optional arguments')
         parser.add_argument('-i', dest='input_filename', default=None,
                             help='File input containing many content URLs.')
-        parser.add_argument('content_urls', metavar='URL', nargs='+',
+        parser.add_argument('content_urls', metavar='URL', nargs='*',
                             help='Content URLs.')
 
         self.args = parser.parse_args(argv)
@@ -47,12 +48,36 @@ class YtsyncCli:
 
         if self.args.input_filename is not None:
             # File input.
-            with open(self.args.input_filename, 'r', encoding='utf-8') as input_file:
-                content_urls += input_file.readlines()
+            content_urls += _read_input_file(self.args.input_filename)
 
         action.run(content_urls)
         print('Done')
 
+
+def _read_input_file(filename: str) -> list[str]:
+    """
+    Read input file.
+    Exclude blank lines or comment lines.
+    """
+    lines = []
+
+    if filename == '-':
+        file = sys.stdin
+    else:
+        file = open(filename, 'r', encoding='utf-8')  # pylint: disable=consider-using-with
+
+    skip_re = re.compile(r'^([ #-]|$)')
+
+    for line in file:
+        if skip_re.match(line):
+            continue
+
+        lines.append(line)
+
+    if filename != '-':
+        file.close()
+
+    return lines
 
 def init_logging() -> None:
     """ Initialize loguru. """

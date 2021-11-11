@@ -47,12 +47,13 @@ class YtsyncAction:
         ]
         argv += self.ytdlp_args
         argv += content_urls
+        argstr = stringify_argv(argv)
 
         if self.dry_run:
-            argstr = stringify_argv(argv)
             loguru.logger.info(f'Dry run action: yt-dlp {argstr}')
             return
 
+        loguru.logger.info(f'Action: yt-dlp {argstr}')
         yt_dlp_main(argv)
 
 

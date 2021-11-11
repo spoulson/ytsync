@@ -24,6 +24,8 @@ class YtsyncCli:
                             help='Verbose output')
         parser.add_argument('--ytdlp-args', dest='ytdlp_args', default='',
                             help='yt-dlp optional arguments')
+        parser.add_argument('-i', dest='input_filename', default=None,
+                            help='File input containing many content URLs.')
         parser.add_argument('content_urls', metavar='URL', nargs='+',
                             help='Content URLs.')
 
@@ -40,7 +42,15 @@ class YtsyncCli:
                               dry_run=self.args.dry_run,
                               download_path=self.args.download_path,
                               ytdlp_args=ytdlp_argv)
-        action.run(self.args.content_urls)
+
+        content_urls = self.args.content_urls
+
+        if self.args.input_filename is not None:
+            # File input.
+            with open(self.args.input_filename, 'r', encoding='utf-8') as input_file:
+                content_urls += input_file.readlines()
+
+        action.run(content_urls)
         print('Done')
 
 

@@ -18,7 +18,7 @@ mypy: init
 
 .PHONY: pycodestyle
 pycodestyle: init
-	pycodestyle ytsync
+	pycodestyle --config .pycodestyle ytsync
 
 .PHONY: tools
 tools: init

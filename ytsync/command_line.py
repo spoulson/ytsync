@@ -73,7 +73,7 @@ class YtSyncCli:
         playlist_id = self.args.playlist_id
         playlists = self.ytapi.list_playlists(playlist_ids=[playlist_id])
         if not playlists:
-            print(f'Playlist not found')
+            print('Playlist not found')
             return
 
         playlist = list(playlists)[0]

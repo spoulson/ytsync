@@ -1,5 +1,5 @@
 .PHONY: default
-default: init lint
+default: lint
 
 .PHONY: init
 init:
@@ -9,9 +9,13 @@ init:
 	fi
 
 .PHONY: lint
-lint:
+lint: init
 	pylint ytsync
 
+.PHONY: tools
+tools: init
+	pip3 install pylint
+
 .PHONY: clean
-clean:
+clean: init
 	rm -rf build dist *.egg-info

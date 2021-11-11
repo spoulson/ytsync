@@ -29,7 +29,7 @@ def write_metadata_file(meta_filename, item, video_filename):
         'create_date': datetime.datetime.now().isoformat(),
         'youtube_playlist_item': item
     }
-    with open(meta_filename, 'w') as mfile:
+    with open(meta_filename, 'w', encoding='utf-8') as mfile:
         mfile.write(json.dumps(metadata))
 
     return

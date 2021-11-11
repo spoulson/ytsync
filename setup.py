@@ -17,6 +17,8 @@ setup(
     ],
     packages=['ytsync'],
     install_requires=[
+        'loguru',
+        'loguru-mypy',
         'yt-dlp'
     ],
     entry_points={

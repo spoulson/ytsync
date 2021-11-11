@@ -4,6 +4,7 @@ import argparse
 import shlex
 import sys
 
+import loguru
 from .action import YtsyncAction
 
 
@@ -43,8 +44,30 @@ class YtsyncCli:
         print('Done')
 
 
+def init_logging() -> None:
+    """ Initialize loguru. """
+    loguru.logger.configure(
+        handlers=[
+            dict(
+                sink=sys.stdout,
+                format='<white><green>{time:YYYY-MM-DD HH:mm:ss}</green> '
+                       + '<level>{level.icon:<5}</level> <dim>|</dim> '
+                       + '{message}</white>\n'
+            )
+        ],
+        levels=[
+            dict(name="DEBUG", icon="DEBUG"),
+            dict(name="INFO", icon="INFO"),
+            dict(name="WARNING", icon="WARN"),
+            dict(name="ERROR", icon="ERROR")
+        ]
+    )
+
+
 def main() -> int:
     """ Console script entrypoint. """
+    init_logging()
+
     argv = sys.argv[1:]
     app = YtsyncCli(argv)
     app.run()

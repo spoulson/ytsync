@@ -4,4 +4,5 @@ single-line-if-stmt=yes
 
 [MESSAGES CONTROL]
 disable=too-few-public-methods,
+        too-many-arguments,
         no-self-use

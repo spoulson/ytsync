@@ -5,7 +5,7 @@ import sys
 
 class YtSyncCli:
     """ CLI class. """
-    args = None
+    args: argparse.Namespace
 
     def _parse_args(self, argv: list[str]) -> None:
         """ Parse command line arguments. """

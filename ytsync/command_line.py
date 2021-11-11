@@ -1,10 +1,13 @@
 """ Command line entrypoint. """
 
 import argparse
+import shlex
 import sys
 
+from .action import YtsyncAction
 
-class YtSyncCli:
+
+class YtsyncCli:
     """ CLI class. """
     args: argparse.Namespace
 
@@ -12,14 +15,16 @@ class YtSyncCli:
         """ Parse command line arguments. """
         # Parse command line arguments.
         parser = argparse.ArgumentParser(description='ytsync')
-        parser.add_argument('-d', default='.',
+        parser.add_argument('-d', dest='download_path', default='.',
                             help='Download path, default current directory')
-        parser.add_argument('--dry-run', action='store_true',
+        parser.add_argument('--dry-run', dest='dry_run', action='store_true',
                             help='Dry run, do not download anything')
-        parser.add_argument('-v', action='store_true',
+        parser.add_argument('-v', dest='verbose', action='store_true',
                             help='Verbose output')
-        parser.add_argument('--ytdlp-args', default='',
+        parser.add_argument('--ytdlp-args', dest='ytdlp_args', default='',
                             help='yt-dlp optional arguments')
+        parser.add_argument('content_urls', metavar='URL', nargs='+',
+                            help='Content URLs.')
 
         self.args = parser.parse_args(argv)
 
@@ -27,15 +32,20 @@ class YtSyncCli:
         """ Constructor. """
         self._parse_args(argv)
 
-    def run(self):
+    def run(self) -> None:
         """ Run ytsync command. """
-
+        ytdlp_argv = shlex.split(self.args.ytdlp_args)
+        action = YtsyncAction(verbose=self.args.verbose,
+                              dry_run=self.args.dry_run,
+                              download_path=self.args.download_path,
+                              ytdlp_args=ytdlp_argv)
+        action.run(self.args.content_urls)
         print('Done')
 
 
 def main() -> int:
     """ Console script entrypoint. """
     argv = sys.argv[1:]
-    app = YtSyncCli(argv)
+    app = YtsyncCli(argv)
     app.run()
     return 0

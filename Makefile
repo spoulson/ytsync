@@ -1,5 +1,5 @@
 .PHONY: default
-default: lint mypy
+default: lint mypy pycodestyle
 
 .PHONY: init
 init:
@@ -16,9 +16,13 @@ lint: init
 mypy: init
 	mypy ytsync
 
+.PHONY: pycodestyle
+pycodestyle: init
+	pycodestyle ytsync
+
 .PHONY: tools
 tools: init
-	pip3 install pylint mypy
+	pip3 install pylint mypy pycodestyle
 
 .PHONY: clean
 clean: init

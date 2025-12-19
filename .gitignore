@@ -1,6 +1,3 @@
 download
-*.pyc
-/build/
-/dist/
-/*.egg-info
-/*.egg
+archive.txt
+cookies*.txt
